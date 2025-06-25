@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    // important settings
+    "module": "ESNext",
+    "target": "ESNext",
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler", // Vite-friendly
+    "verbatimModuleSyntax": true, // <-- you already have this
+
+    // helpful for types
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+
+    // add this if using custom .d.ts files
+    "typeRoots": ["./node_modules/@types", "./src/@types"]
+  },
+  "include": ["src"]
+}
