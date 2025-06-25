@@ -20,35 +20,43 @@ interface ChatEntry {
   codeSnippets: CodeSnippet[];
 }
 
+interface AttachedFile {
+  filename: string;
+  content: string;
+}
+
 function App() {
   const [history, setHistory] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile | null>(null);
 
   useEffect(() => {
     window.vscode = acquireVsCodeApi();
 
-    window.addEventListener('message', (event) => {
-      try {
-        const message = event.data;
+    window.addEventListener("message", (event) => {
+      const message = event.data;
 
-        if (message.type === 'aiResponse') {
-          const rawText = message?.text || "Thinking...";
+      if (message.type === "attachedFiles") {
+        const file = message.files?.[0];
+        if (file) {
+          setAttachedFiles(file);
+        } // [{ filename, content }]
+      }
 
-          const blocks = extractLabeledCodeBlocks(rawText);
+      if (message.type === "aiResponse") {
+        const rawText = message?.text ? message?.text : 'Thinking';
+        const blocks = extractLabeledCodeBlocks(rawText);
 
-          setHistory((prev) => {
-            const last = prev[prev.length - 1];
-            const updated = [...prev.slice(0, -1), {
-              ...last,
-              aiResponse: rawText,
-              codeSnippets: blocks
-            }];
-            return updated;
-          });
-        }
-      } catch (error) {
-        console.error("❌ Error handling message:", error);
+        setHistory((prev) => {
+          const last = prev[prev.length - 1];
+          const updated = [...prev.slice(0, -1), {
+            ...last,
+            aiResponse: rawText,
+            codeSnippets: blocks
+          }];
+          return updated;
+        });
       }
     });
   }, []);
@@ -60,10 +68,19 @@ function App() {
   const handleSend = () => {
     if (input.trim() === '') return;
 
-    window.vscode.postMessage({ type: 'userMessage', text: input });
+    window.vscode.postMessage({
+      type: 'userMessage',
+      text: input,
+      files: attachedFiles ? attachedFiles : [],
+    });
 
     setHistory((prev) => [...prev, { userQuery: input, aiResponse: '', codeSnippets: [] }]);
     setInput('');
+    setAttachedFiles(null); // clear files after sending
+  };
+
+  const handleAttachClick = () => {
+    window.vscode.postMessage({ type: "pickFile" });
   };
 
   return (
@@ -78,9 +95,7 @@ function App() {
             </div>
             <div>
               <span className="font-semibold text-green-400">AI:</span>
-              <ReactMarkdown
-                rehypePlugins={[rehypeHighlight]}
-              >
+              <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
                 {entry.aiResponse}
               </ReactMarkdown>
             </div>
@@ -97,7 +112,13 @@ function App() {
         <div ref={chatEndRef} />
       </div>
 
-      <div className="mt-4 flex">
+      {attachedFiles && (
+        <div className="mt-2 text-sm text-gray-300">
+          📎 Attached: {attachedFiles.filename}
+        </div>
+      )}
+
+      <div className="mt-4 flex gap-2">
         <input
           type="text"
           value={input}
@@ -106,9 +127,10 @@ function App() {
           className="flex-1 p-2 rounded bg-gray-700 text-white outline-none"
           placeholder="Type your message..."
         />
+        <button onClick={handleAttachClick} title="Attach File">📎</button>
         <button
           onClick={handleSend}
-          className="ml-2 px-4 py-2 rounded bg-blue-600 hover:bg-blue-700"
+          className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700"
         >
           Send
         </button>
@@ -118,6 +140,5 @@ function App() {
 }
 
 export default App;
-
 
 
