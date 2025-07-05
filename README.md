@@ -2,6 +2,10 @@
 
 This is the README for your extension "code-buddy". After writing up a brief description, we recommend including the following sections.
 
+
+https://github.com/user-attachments/assets/dfec3587-9c77-4ce3-8c7e-f4013b9a9620
+
+
 ## Features
 
 Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
